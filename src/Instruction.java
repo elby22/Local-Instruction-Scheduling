@@ -2,7 +2,23 @@
 public class Instruction {
 	
 	int latency;
-	int offset;
+	
+	
+	int offset = 0;
+	int constant = 0;
+	String in1;
+	String in2;
+	String out;
+	String regOffset;
+	String type;
+	
+	String instructionString;
+	
+	public Instruction(String type){
+		this.type = type;
+		instructionString = type;
+	}
+	
 	public int getOffset() {
 		return offset;
 	}
@@ -19,19 +35,6 @@ public class Instruction {
 		this.regOffset = regOffset;
 	}
 
-	int memConst = 0;
-	String in1;
-	String in2;
-	String out1;
-	String regOffset;
-	String type;
-	String instructionString;
-	
-	public Instruction(String type){
-		this.type = type;
-		instructionString = type;
-	}
-
 	public int getLatency() {
 		return latency;
 	}
@@ -40,12 +43,12 @@ public class Instruction {
 		this.latency = latency;
 	}
 
-	public int getMemConst() {
-		return memConst;
+	public int getConst() {
+		return constant;
 	}
 
-	public void setMemConst(int memConst) {
-		this.memConst = memConst;
+	public void setConst(int Const) {
+		this.constant = Const;
 	}
 
 	public String getIn1() {
@@ -64,12 +67,12 @@ public class Instruction {
 		this.in2 = in2;
 	}
 
-	public String getOut1() {
-		return out1;
+	public String getOut() {
+		return out;
 	}
 
-	public void setOut1(String out1) {
-		this.out1 = out1;
+	public void setOut(String out) {
+		this.out = out;
 	}
 
 	public String getType() {
@@ -79,5 +82,11 @@ public class Instruction {
 	public void setType(String type) {
 		this.type = type;
 	}
+
+	@Override
+	public String toString() {
+		return instructionString + " :" + latency;
+	}
+	
 	
 }
