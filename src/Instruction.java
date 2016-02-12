@@ -85,7 +85,7 @@ public class Instruction {
 
 	@Override
 	public String toString() {
-		return instructionString + " :" + latency;
+		return "(" + latency + ") " + instructionString;
 	}
 	
 	

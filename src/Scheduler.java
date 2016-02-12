@@ -1,6 +1,12 @@
 import java.util.ArrayList;
 import java.util.StringTokenizer;
 
+import org.jgrapht.EdgeFactory;
+import org.jgrapht.graph.SimpleDirectedWeightedGraph;
+import org.jgraph.*;
+import org.jgrapht.generate.*;
+import org.jgrapht.graph.*;
+import org.jgrapht.traverse.*;
 public class Scheduler {
 	
 	static ArrayList<Instruction> instructions;
@@ -13,10 +19,66 @@ public class Scheduler {
 
 		parseILOC(input);
 		
-		for(Instruction i : instructions){
-			System.out.println(i);
+//		for(Instruction ins : instructions){
+//			System.out.println(instructions.indexOf(ins) + " " + ins.toString());
+//		}
+		
+		SimpleDirectedWeightedGraph dependencies = new SimpleDirectedWeightedGraph(DefaultEdge.class);
+		
+		//Add verticies
+		for(Instruction ins : instructions){
+			dependencies.addVertex(ins);
 		}
+
+		for(int i = 0; i < instructions.size(); i++){
+			
+			String out = instructions.get(i).getOut();
+
+			for(int j = i+1; j < instructions.size(); j++){
+				
+				//true dependencies covering:
+				//load [in1] => [out]
+				//store [in1] => [out]
+				//add [in1], [in2] => [out]
+				//sub [in1], [in2] => [out]
+				//mult [in1], [in2] => [out]
+				//div [in1], [in2] => [out]
+				
+				if(out.equals(instructions.get(j).getIn1())
+						|| out.equals(instructions.get(j).getIn2())){
+					dependencies.addEdge(instructions.get(i), instructions.get(j));
+					
+					
+				}
+					
+					
+			}
+		}
+		
+		System.out.println(dependencies.toString());
+		
 	}
+	
+	/*
+	 * Parses the input string and stores instructions in 'instructions' ArrayList
+	 * Map of the instructions and their feilds:
+	 * 
+		//loadI [constant] => [out]
+		//load [in1] => [out]
+		//load [in1], [offset] => [out]
+		//loadAO [in1], [regOffset] => [out]
+		//store [in1] => [out]
+		//storeAI [in1] => [out], [offset]
+		//storeAO [in1] => [out], [regOffset]
+		//addI [in1], [const] => [out]
+		//add [in1], [in2] => [out]
+		//subI [in1], [const] => [out]
+		//sub [in1], [in2] => [out]
+		//mult [in1], [in2] => [out]
+		//div [in1], [in2] => [out]
+		//nop
+		//output [out]
+	 */
 	
 	public static void parseILOC(String input){
 		StringTokenizer tokenizer = new StringTokenizer(input);
@@ -24,7 +86,6 @@ public class Scheduler {
 		//Parse
 		while(tokenizer.hasMoreTokens()){
 			String next = tokenizer.nextToken();
-			System.out.println(next);
 			Instruction ins = null;
 			
 			//loadI [constant] => [out]
@@ -56,7 +117,7 @@ public class Scheduler {
 				
 				ins.instructionString = ins.getType() + " " + ins.getConst() + " => " + ins.getOut();
 				
-			//load [in1], [offset] => [out]
+			//loadAI [in1], [offset] => [out]
 			}else if("loadAI".equals(next)){
 				
 				ins = new Instruction(next);
