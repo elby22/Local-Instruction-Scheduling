@@ -31,38 +31,62 @@ public class Scheduler {
 		for(Instruction ins : instructions){
 			dependencies.addVertex(ins);
 		}
-
-		for(int i = 0; i < instructions.size(); i++){
+		
+		for(int i = instructions.size() - 1; i >= 0; i--){
 			
-			String out = instructions.get(i).getOut();
-			int outOffset = instructions.get(i).getOffset();
-			String outRegOffset = instructions.get(i).getRegOffset();
+			Instruction thisIns = instructions.get(i);
+			String type = thisIns.getType();
+			
+			boolean found1 = false;
+			boolean found2 = false;
 
-			for(int j = i+1; j < instructions.size(); j++){
+			for(int j = i - 1; j >= 0; j--){
 				
-				//true dependenceis output : storeAI [in1] => [out], [offset]
-				//loadAI [in1], [offset] => [out]
-				if(instructions.get(i).getType().equals("storeAI") && instructions.get(j).getType().equals("loadAI")){
-					if(out.equals(instructions.get(j).getIn1()) && outOffset == instructions.get(j).getOffset()){
-						dependencies.addEdge(instructions.get(i), instructions.get(j));
-					}
-				}
-				//true dependenceis output : storeAO [in1] => [out], [regOffset]
-				//loadAO [in1], [regOffset] => [out]
-				else if(instructions.get(i).getType().equals("storeAO") && instructions.get(j).getType().equals("loadAO")){
-					if(out.equals(instructions.get(j).getIn1()) && outRegOffset.equals(instructions.get(j).getRegOffset())){
-						dependencies.addEdge(instructions.get(i), instructions.get(j));
-					}
-				}
-				//Everything else
-				else if(out.equals(instructions.get(j).getIn1())
-						|| out.equals(instructions.get(j).getIn2())){
-					dependencies.addEdge(instructions.get(i), instructions.get(j));
-				}	
+				Instruction thatIns = instructions.get(j);
+				
+				if(type.equals("add") ||
+				   type.equals("sub") ||
+				   type.equals("div") ||
+				   type.equals("mult")){
 					
+					//Make sure both left side operands are found, then break loop
+					if(thisIns.getIn1().equals(thatIns.getOut()) && !found1){
+						dependencies.addEdge(thisIns, thatIns);
+						found1 = true;
+					}else if(thisIns.getIn2().equals(thatIns.getOut()) && !found2){
+						dependencies.addEdge(thisIns, thatIns);
+						found2 = true;
+					}
+					
+				}else if(type.equals("addI") || 
+						 type.equals("subI") || 
+						 type.equals("storeAO") ||
+						 type.equals("storeAI")){
+					
+					//Only have one operand to find
+					if(thisIns.getIn1().equals(thatIns.getOut()) && !found1){
+						dependencies.addEdge(thisIns, thatIns);
+						found1 = true;
+					}
+					
+				}else if(type.equals("loadAO") && thatIns.getType().equals("storeAO")){
+					
+					if(thisIns.getIn1().equals(thatIns.getOut()) && thisIns.getRegOffset().equals(thatIns.getRegOffset())){
+						dependencies.addEdge(thisIns, thatIns);
+						break;
+					}
+				}else if(type.equals("loadAI") && thatIns.getType().equals("storeAI")){
+					
+					if(thisIns.getIn1().equals(thatIns.getOut()) && thisIns.getOffset() == thatIns.getOffset()){
+						dependencies.addEdge(thisIns, thatIns);
+						break;
+					}
+				}
 			}
 		}
+
 		
+		//Print Graph
 		Set verticies = dependencies.vertexSet();
 		Set edges = dependencies.edgeSet();
 		
