@@ -12,6 +12,8 @@ import org.jgrapht.traverse.*;
 public class Scheduler {
 	
 	static ArrayList<Instruction> instructions;
+	
+	static SimpleDirectedWeightedGraph dependencies;
 
 	public static void main(String[] args) {
 		String mode = args[0];
@@ -21,17 +23,39 @@ public class Scheduler {
 
 		parseILOC(input);
 		
-//		for(Instruction ins : instructions){
-//			System.out.println(instructions.indexOf(ins) + " " + ins.toString());
-//		}
 		
-		SimpleDirectedWeightedGraph dependencies = new SimpleDirectedWeightedGraph(DefaultEdge.class);
+		dependencies = new SimpleDirectedWeightedGraph(DefaultEdge.class);
 		
 		//Add verticies
 		for(Instruction ins : instructions){
 			dependencies.addVertex(ins);
 		}
 		
+		//Build graph edges
+		addEdges();
+		
+		
+		//Print Graph
+		Set verticies = dependencies.vertexSet();
+		Set edges = dependencies.edgeSet();
+		
+		for(Object i : verticies){
+			
+			System.out.println(i);
+			for(Object e : edges){
+				
+				if(dependencies.getEdgeSource(e).equals(i)){
+					System.out.println("	" + e);
+				}
+			}
+		}
+		
+	}
+	
+	
+	//DOES NOT ACCOUNT FOR ANTI, NOP AND OUTPUT
+	//Also does not yet add edges.
+	public static void addEdges(){
 		for(int i = instructions.size() - 1; i >= 0; i--){
 			
 			Instruction thisIns = instructions.get(i);
@@ -82,25 +106,9 @@ public class Scheduler {
 						break;
 					}
 				}
+				//WHAT ABOUT NOP
 			}
 		}
-
-		
-		//Print Graph
-		Set verticies = dependencies.vertexSet();
-		Set edges = dependencies.edgeSet();
-		
-		for(Object i : verticies){
-			
-			System.out.println(i);
-			for(Object e : edges){
-				
-				if(dependencies.getEdgeSource(e).equals(i)){
-					System.out.println("	" + e);
-				}
-			}
-		}
-		
 	}
 	
 	/*
