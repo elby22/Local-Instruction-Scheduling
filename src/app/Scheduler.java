@@ -14,7 +14,9 @@ public class Scheduler {
 	static ArrayList<Instruction> instructions;
 	
 	static SimpleDirectedWeightedGraph dependencies;
-
+	
+	static Instruction root;
+	
 	public static void main(String[] args) {
 		String mode = args[0];
 		String input = args[1].replaceAll(",", "");
@@ -34,6 +36,7 @@ public class Scheduler {
 		//Build graph edges
 		addEdges();
 		
+		prioritize();
 		
 		//Print Graph
 		Set verticies = dependencies.vertexSet();
@@ -41,7 +44,8 @@ public class Scheduler {
 		
 		for(Object i : verticies){
 			
-			System.out.println(i);
+			Instruction ii = (Instruction)i;
+			System.out.println("Priority: " + ii.priority + " - " + i);
 			for(Object e : edges){
 				
 				if(dependencies.getEdgeSource(e).equals(i)){
@@ -53,10 +57,38 @@ public class Scheduler {
 	}
 	
 	
+	public static void prioritize(){
+		//BAD IDEA PLEASE CHANGE
+		//Assuming root to be last instruction 
+		root = instructions.get(instructions.size() - 1);
+		
+		root.priority = root.getLatency();
+		
+		BreadthFirstIterator bfs = new BreadthFirstIterator(dependencies, root);
+		bfs.next();
+		while(bfs.hasNext()){
+			Instruction ins = (Instruction)bfs.next();
+			
+			Set edges = dependencies.edgesOf(ins);
+			System.out.println(ins);
+			
+			//There should only be one source edge
+			for(Object e : edges){
+				Instruction source = (Instruction)dependencies.getEdgeSource(e);
+				if(!source.equals(ins)){
+					ins.priority = source.priority + ins.getLatency();
+				}
+			}
+		}
+	}
+	
+	
 	//DOES NOT ACCOUNT FOR ANTI, NOP AND OUTPUT
-	//Also does not yet add edges.
+	//Also does not yet add weights.
 	public static void addEdges(){
 		for(int i = instructions.size() - 1; i >= 0; i--){
+			
+			
 			
 			Instruction thisIns = instructions.get(i);
 			String type = thisIns.getType();

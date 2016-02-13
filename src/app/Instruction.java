@@ -2,8 +2,12 @@ package app;
 
 public class Instruction {
 	
+	//Delay()
 	int latency;
 	
+	//Priority in array
+	int priority = 0;
+
 	
 	int offset = 0;
 	int constant = 0;
@@ -14,6 +18,7 @@ public class Instruction {
 	String type;
 	int inputIndex = 1;
 	String instructionString;
+	
 	
 	public Instruction(String type){
 		this.type = type;
