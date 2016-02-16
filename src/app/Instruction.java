@@ -1,6 +1,6 @@
 package app;
 
-public class Instruction {
+public class Instruction implements Comparable{
 	
 	//Delay()
 	int latency;
@@ -8,9 +8,9 @@ public class Instruction {
 	//Priority in array
 	int priority = 0;
 
-	
 	int offset = 0;
 	int constant = 0;
+	int schedule;
 	String in1;
 	String in2;
 	String out;
@@ -18,6 +18,9 @@ public class Instruction {
 	String type;
 	int inputIndex = 1;
 	String instructionString;
+	
+	boolean isLeaf = false;
+	boolean isRoot = false;
 	
 	
 	public Instruction(String type){
@@ -92,6 +95,14 @@ public class Instruction {
 	@Override
 	public String toString() {
 		return "[" + inputIndex + "] (" + latency + ") " + instructionString;
+	}
+
+	
+	//Compareto is used for heap, compares based on priority
+	@Override
+	public int compareTo(Object o) {
+		Instruction that = (Instruction) o;
+		return (this.priority - that.priority);
 	}
 	
 	

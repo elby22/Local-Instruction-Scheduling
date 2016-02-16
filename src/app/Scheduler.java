@@ -1,6 +1,7 @@
 package app;
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.PriorityQueue;
 import java.util.Set;
 import java.util.StringTokenizer;
 
@@ -36,33 +37,57 @@ public class Scheduler {
 		//Build graph edges
 		addEdges();
 		
-		prioritize();
+		//BAD IDEA PLEASE CHANGE
+		//Look below
+		root = instructions.get(instructions.size() - 1);
 		
-		//Print Graph
-		Set verticies = dependencies.vertexSet();
-		Set edges = dependencies.edgeSet();
+		root.priority = root.getLatency();
 		
-		for(Object i : verticies){
-			
-			Instruction ii = (Instruction)i;
-			System.out.println("Priority: " + ii.priority + " - " + i);
-			for(Object e : edges){
-				
-				if(dependencies.getEdgeSource(e).equals(i)){
-					System.out.println("	" + e);
-				}
+		//Find leafs
+		//CAN FIND ROOTS, DO THAT LATER
+		for(Instruction ins : instructions){
+			//Check if leaf
+			System.out.println(dependencies.outgoingEdgesOf(ins).size());
+			System.out.println(dependencies.incomingEdgesOf(ins).size());
+			System.out.println("++++++++++++");
+
+			if(dependencies.outgoingEdgesOf(ins).isEmpty()){
+				ins.isLeaf = true;
+			}
+			if(dependencies.incomingEdgesOf(ins).isEmpty()){
+				ins.isRoot = true;
 			}
 		}
+				
+		prioritize();
+		
+		optionA();
+		
+//		//Print Graph
+//		Set verticies = dependencies.vertexSet();
+//		Set edges = dependencies.edgeSet();
+//				
+//		for(Object i : verticies){
+//			
+//			Instruction ii = (Instruction)i;
+//			System.out.println("Priority: " + ii.priority + " - " + i);
+//			for(Object e : edges){
+//				
+//				if(dependencies.getEdgeSource(e).equals(i)){
+//					System.out.println("	" + e);
+//				}
+//			}
+//		}
+		
+		for(Instruction ins : instructions){
+			System.out.println(ins.schedule +" =S= " + ins.toString() + " =P= " + ins.priority);
+		}
+		
 		
 	}
 	
 	
 	public static void prioritize(){
-		//BAD IDEA PLEASE CHANGE
-		//Assuming root to be last instruction 
-		root = instructions.get(instructions.size() - 1);
-		
-		root.priority = root.getLatency();
 		
 		BreadthFirstIterator bfs = new BreadthFirstIterator(dependencies, root);
 		bfs.next();
@@ -437,6 +462,52 @@ public class Scheduler {
 			instructions.add(ins);
 			count++;
 		}
+	}
+	
+	public static void optionA(){
+		int cycle = 1;
+		PriorityQueue<Instruction> ready = new PriorityQueue<Instruction>(); 
+		ArrayList<Instruction> active = new ArrayList<Instruction>();
+		
+		for(Instruction ins : instructions){
+			if(ins.isLeaf) ready.add(ins);
+		}
+		
+		while(!(ready.isEmpty() && active.isEmpty())){
+			if(!ready.isEmpty()){
+				Instruction op = ready.remove();
+				op.schedule = cycle;
+				active.add(op);
+			}
+			
+			cycle++;
+			ArrayList<Instruction> removeFromActive = new ArrayList<Instruction>();
+			
+			for(Instruction op : active){
+				if(op.schedule + op.latency <= cycle){
+					removeFromActive.add(op);
+					//Tree is reversed, so the outgoing edges point to instructions that must fire before this instruction
+					Set source = dependencies.outgoingEdgesOf(op);
+					boolean thisOpReady = true;
+					for(Object edge : source){
+						DefaultEdge e = (DefaultEdge)edge;
+						Instruction predecessor = (Instruction)dependencies.getEdgeTarget(e);
+						//
+						if(!ready.contains(predecessor)){
+							thisOpReady = false;
+							break;
+						}
+					}
+					
+					if(thisOpReady){
+						ready.add(op);
+					}
+				}
+			}
+			
+			active.removeAll(removeFromActive);
+		}
+		
 	}
 
 }
