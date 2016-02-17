@@ -102,7 +102,7 @@ public class Instruction implements Comparable{
 	@Override
 	public int compareTo(Object o) {
 		Instruction that = (Instruction) o;
-		return (this.priority - that.priority);
+		return (that.priority - this.priority);
 	}
 	
 	

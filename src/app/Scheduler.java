@@ -109,12 +109,8 @@ public class Scheduler {
 	
 	
 	//DOES NOT ACCOUNT FOR ANTI, NOP AND OUTPUT
-	//Also does not yet add weights.
 	public static void addEdges(){
-		for(int i = instructions.size() - 1; i >= 0; i--){
-			
-			
-			
+		for(int i = instructions.size() - 1; i >= 0; i--){			
 			Instruction thisIns = instructions.get(i);
 			String type = thisIns.getType();
 			
@@ -481,26 +477,39 @@ public class Scheduler {
 			}
 			
 			cycle++;
-			ArrayList<Instruction> removeFromActive = new ArrayList<Instruction>();
 			
+			//This arraylist prevents concurrency issues
+			ArrayList<Instruction> removeFromActive = new ArrayList<Instruction>();
+		
 			for(Instruction op : active){
 				if(op.schedule + op.latency <= cycle){
+					System.out.println("     " + op);
 					removeFromActive.add(op);
+					
 					//Tree is reversed, so the outgoing edges point to instructions that must fire before this instruction
-					Set source = dependencies.outgoingEdgesOf(op);
-					boolean thisOpReady = true;
-					for(Object edge : source){
-						DefaultEdge e = (DefaultEdge)edge;
-						Instruction predecessor = (Instruction)dependencies.getEdgeTarget(e);
-						//
-						if(!ready.contains(predecessor)){
-							thisOpReady = false;
+					//There will be one edge to the successor.
+					//The successor may have many dependencies. If they are all inactive, then add this new one to the queue.
+					//NOTE: this is a convoluted method for doing this. Reason being, I don't know the API that well and we are working through a graph backwards.
+					Set successors = dependencies.incomingEdgesOf(op);
+					
+					Object[] edgeArray = successors.toArray();
+					if(edgeArray.length == 0) break; //If the array is empty, there is no nextOp
+					Object edge = edgeArray[0];
+					 
+					boolean nextOpReady = true;
+					Instruction nextOp = (Instruction)dependencies.getEdgeSource((DefaultEdge)edge);
+					
+					Set deps = dependencies.outgoingEdgesOf(nextOp);
+					for(Object depEdge : deps){
+						Instruction dependency = (Instruction)dependencies.getEdgeTarget((DefaultEdge)depEdge);
+						if(active.contains(dependency) && !removeFromActive.contains(dependency)){
+							nextOpReady = false;
 							break;
 						}
 					}
 					
-					if(thisOpReady){
-						ready.add(op);
+					if(nextOpReady){
+						ready.add(nextOp);
 					}
 				}
 			}
