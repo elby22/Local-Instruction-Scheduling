@@ -6,7 +6,8 @@ import java.util.Set;
 import java.util.StringTokenizer;
 
 import org.jgrapht.EdgeFactory;
-import org.jgrapht.graph.DefaultEdge;
+import org.jgrapht.graph.DefaultWeightedEdge;
+import org.jgrapht.graph.DefaultWeightedEdge;
 import org.jgrapht.graph.SimpleDirectedWeightedGraph;
 import org.jgrapht.generate.*;
 import org.jgrapht.traverse.*;
@@ -14,9 +15,10 @@ public class Scheduler {
 	
 	static ArrayList<Instruction> instructions;
 	
-	static SimpleDirectedWeightedGraph dependencies;
+	static SimpleDirectedWeightedGraph<Instruction, DefaultWeightedEdge> dependencies;
 	
 	static Instruction root;
+	static ArrayList<Instruction> roots;
 	
 	public static void main(String[] args) {
 		String mode = args[0];
@@ -27,7 +29,7 @@ public class Scheduler {
 		parseILOC(input);
 		
 		
-		dependencies = new SimpleDirectedWeightedGraph(DefaultEdge.class);
+		dependencies = new SimpleDirectedWeightedGraph<Instruction, DefaultWeightedEdge>(DefaultWeightedEdge.class);
 		
 		//Add verticies
 		for(Instruction ins : instructions){
@@ -43,19 +45,18 @@ public class Scheduler {
 		
 		root.priority = root.getLatency();
 		
+		roots = new ArrayList<Instruction>();
+		
+		
 		//Find leafs
 		//CAN FIND ROOTS, DO THAT LATER
 		for(Instruction ins : instructions){
-			//Check if leaf
-			System.out.println(dependencies.outgoingEdgesOf(ins).size());
-			System.out.println(dependencies.incomingEdgesOf(ins).size());
-			System.out.println("++++++++++++");
-
 			if(dependencies.outgoingEdgesOf(ins).isEmpty()){
 				ins.isLeaf = true;
 			}
 			if(dependencies.incomingEdgesOf(ins).isEmpty()){
 				ins.isRoot = true;
+				roots.add(ins);
 			}
 		}
 				
@@ -64,21 +65,6 @@ public class Scheduler {
 		optionA();
 		
 //		//Print Graph
-//		Set verticies = dependencies.vertexSet();
-//		Set edges = dependencies.edgeSet();
-//				
-//		for(Object i : verticies){
-//			
-//			Instruction ii = (Instruction)i;
-//			System.out.println("Priority: " + ii.priority + " - " + i);
-//			for(Object e : edges){
-//				
-//				if(dependencies.getEdgeSource(e).equals(i)){
-//					System.out.println("	" + e);
-//				}
-//			}
-//		}
-		
 		for(Instruction ins : instructions){
 			System.out.println(ins.schedule +" =S= " + ins.toString() + " =P= " + ins.priority);
 		}
@@ -89,17 +75,17 @@ public class Scheduler {
 	
 	public static void prioritize(){
 		
-		BreadthFirstIterator bfs = new BreadthFirstIterator(dependencies, root);
+		BreadthFirstIterator<Instruction, DefaultWeightedEdge> bfs = new BreadthFirstIterator<Instruction, DefaultWeightedEdge>(dependencies, root);
 		bfs.next();
 		while(bfs.hasNext()){
-			Instruction ins = (Instruction)bfs.next();
+			Instruction ins = bfs.next();
 			
-			Set edges = dependencies.edgesOf(ins);
+			Set<DefaultWeightedEdge> edges = dependencies.edgesOf(ins);
 			System.out.println(ins);
 			
 			//There should only be one source edge
-			for(Object e : edges){
-				Instruction source = (Instruction)dependencies.getEdgeSource(e);
+			for(DefaultWeightedEdge e : edges){
+				Instruction source = dependencies.getEdgeSource(e);
 				if(!source.equals(ins)){
 					ins.priority = source.priority + ins.getLatency();
 				}
@@ -135,6 +121,17 @@ public class Scheduler {
 						found2 = true;
 					}
 					
+					//Anti: may be 1 or 0 per op 
+					//Sets a regular edge, but with weight 22
+					//FIX THE OPTION A Algorithm
+					if(thisIns.getOut().equals(thatIns.getIn1())){
+						DefaultWeightedEdge e = dependencies.addEdge(thisIns, thatIns);
+						if(e != null) dependencies.setEdgeWeight(e, 22);
+					}else if(thisIns.getOut().equals(thatIns.getIn2())){
+						DefaultWeightedEdge e = (DefaultWeightedEdge) dependencies.addEdge(thisIns, thatIns);
+						if(e != null) dependencies.setEdgeWeight(e, 22);
+					}
+					
 				}else if(type.equals("addI") || 
 						 type.equals("subI") || 
 						 type.equals("storeAO") ||
@@ -159,7 +156,8 @@ public class Scheduler {
 						break;
 					}
 				}
-				//WHAT ABOUT NOP
+
+				
 			}
 		}
 	}
@@ -497,11 +495,11 @@ public class Scheduler {
 					Object edge = edgeArray[0];
 					 
 					boolean nextOpReady = true;
-					Instruction nextOp = (Instruction)dependencies.getEdgeSource((DefaultEdge)edge);
+					Instruction nextOp = (Instruction)dependencies.getEdgeSource((DefaultWeightedEdge)edge);
 					
 					Set deps = dependencies.outgoingEdgesOf(nextOp);
 					for(Object depEdge : deps){
-						Instruction dependency = (Instruction)dependencies.getEdgeTarget((DefaultEdge)depEdge);
+						Instruction dependency = (Instruction)dependencies.getEdgeTarget((DefaultWeightedEdge)depEdge);
 						if(active.contains(dependency) && !removeFromActive.contains(dependency)){
 							nextOpReady = false;
 							break;
