@@ -1,0 +1,30 @@
+for(int i = 0; i < instructions.size(); i++){
+			
+			String out = instructions.get(i).getOut();
+			int outOffset = instructions.get(i).getOffset();
+			String outRegOffset = instructions.get(i).getRegOffset();
+
+			for(int j = i+1; j < instructions.size(); j++){
+				
+				//true dependenceis output : storeAI [in1] => [out], [offset]
+				//loadAI [in1], [offset] => [out]
+				if(instructions.get(i).getType().equals("storeAI") && instructions.get(j).getType().equals("loadAI")){
+					if(out.equals(instructions.get(j).getIn1()) && outOffset == instructions.get(j).getOffset()){
+						dependencies.addEdge(instructions.get(i), instructions.get(j));
+					}
+				}
+				//true dependenceis output : storeAO [in1] => [out], [regOffset]
+				//loadAO [in1], [regOffset] => [out]
+				else if(instructions.get(i).getType().equals("storeAO") && instructions.get(j).getType().equals("loadAO")){
+					if(out.equals(instructions.get(j).getIn1()) && outRegOffset.equals(instructions.get(j).getRegOffset())){
+						dependencies.addEdge(instructions.get(i), instructions.get(j));
+					}
+				}
+				//Everything else
+				else if(out.equals(instructions.get(j).getIn1())
+						|| out.equals(instructions.get(j).getIn2())){
+					dependencies.addEdge(instructions.get(i), instructions.get(j));
+				}	
+					
+			}
+		}
