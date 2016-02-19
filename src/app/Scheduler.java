@@ -1,12 +1,20 @@
 package app;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.PriorityQueue;
 import java.util.Set;
 import java.util.StringTokenizer;
 
+import org.jgrapht.alg.DijkstraShortestPath;
+import org.jgrapht.ext.DOTExporter;
 import org.jgrapht.graph.DefaultWeightedEdge;
 import org.jgrapht.graph.SimpleDirectedWeightedGraph;
-import org.jgrapht.traverse.*;
+import org.jgrapht.traverse.BreadthFirstIterator;
+
+
 public class Scheduler {
 	
 	static ArrayList<Instruction> instructions;
@@ -16,7 +24,7 @@ public class Scheduler {
 	static Instruction root;
 	static ArrayList<Instruction> roots;
 	
-	public static void main(String[] args) {
+	public static void main(String[] args) throws IOException {
 		String mode = args[0];
 		String input = args[1].replaceAll(",", "");
 		
@@ -33,7 +41,9 @@ public class Scheduler {
 		}
 		
 		//Build graph edges
-		addEdges();
+		addTrueDependencies();
+		
+		addAntiDependcencies();
 		
 		//BAD IDEA PLEASE CHANGE
 		//Look below
@@ -43,9 +53,7 @@ public class Scheduler {
 		
 		roots = new ArrayList<Instruction>();
 		
-		
-		//Find leafs
-		//CAN FIND ROOTS, DO THAT LATER
+		//find leafs
 		for(Instruction ins : instructions){
 			if(dependencies.outgoingEdgesOf(ins).isEmpty()){
 				ins.isLeaf = true;
@@ -61,9 +69,29 @@ public class Scheduler {
 		optionA();
 		
 //		//Print Graph
+		
+		
 		for(Instruction ins : instructions){
 			System.out.println(ins.schedule +" =S= " + ins.toString() + " =P= " + ins.priority);
 		}
+		
+		Set<Instruction> verticies = dependencies.vertexSet();		
+		Set<DefaultWeightedEdge> edges = dependencies.edgeSet();		
+				for(Instruction i : verticies){		
+					
+					Instruction ii = i;		
+					System.out.println("Priority: " + ii.priority + " - " + i);		
+					for(DefaultWeightedEdge e : edges){		
+								
+						if(dependencies.getEdgeSource(e).equals(i)){		
+							System.out.println("	" + e + dependencies.getEdgeWeight(e));		
+						}		
+					}		
+				}
+		
+
+		DOTExporter<Instruction, DefaultWeightedEdge> exporter = new DOTExporter<Instruction, DefaultWeightedEdge>();
+		exporter.export(new FileWriter(new File("C:\\Users\\Elby\\Desktop") + "initial-graph.dot"), dependencies);
 		
 		
 	}
@@ -90,8 +118,8 @@ public class Scheduler {
 	}
 	
 	
-	//DOES NOT ACCOUNT FOR ANTI, NOP AND OUTPUT
-	public static void addEdges(){
+	//Does not account for NOP AND OUTPUT
+	public static void addTrueDependencies(){
 		for(int i = instructions.size() - 1; i >= 0; i--){			
 			Instruction thisIns = instructions.get(i);
 			String type = thisIns.getType();
@@ -115,17 +143,6 @@ public class Scheduler {
 					}else if(thisIns.getIn2().equals(thatIns.getOut()) && !found2){
 						dependencies.addEdge(thisIns, thatIns);
 						found2 = true;
-					}
-					
-					//Anti: may be 1 or 0 per op 
-					//Sets a regular edge, but with weight 22
-					//FIX THE OPTION A Algorithm
-					if(thisIns.getOut().equals(thatIns.getIn1())){
-						DefaultWeightedEdge e = dependencies.addEdge(thisIns, thatIns);
-						if(e != null) dependencies.setEdgeWeight(e, 22);
-					}else if(thisIns.getOut().equals(thatIns.getIn2())){
-						DefaultWeightedEdge e = (DefaultWeightedEdge) dependencies.addEdge(thisIns, thatIns);
-						if(e != null) dependencies.setEdgeWeight(e, 22);
 					}
 					
 				}else if(type.equals("addI") || 
@@ -154,6 +171,98 @@ public class Scheduler {
 				}
 
 				
+			}
+		}
+	}
+
+	public static void addAntiDependcencies(){
+		for(int i = instructions.size() - 1; i >= 0; i--){			
+			Instruction thisIns = instructions.get(i);
+			String type = thisIns.getType();
+
+			for(int j = i - 1; j >= 0; j--){
+				
+				Instruction thatIns = instructions.get(j);
+				
+				List<DefaultWeightedEdge> path = DijkstraShortestPath.findPathBetween(dependencies, thisIns, thatIns);
+				
+				if(type.equals("add") ||
+				   type.equals("sub") ||
+				   type.equals("div") ||
+				   type.equals("mult")){
+					
+					if(path == null){
+						if(thisIns.getOut().equals(thatIns.getIn1())){
+							DefaultWeightedEdge e = dependencies.addEdge(thisIns, thatIns);
+							if(e != null) dependencies.setEdgeWeight(e, 22);
+							break;
+						}else if(thisIns.getOut().equals(thatIns.getIn2())){
+							DefaultWeightedEdge e = dependencies.addEdge(thisIns, thatIns);
+							if(e != null) dependencies.setEdgeWeight(e, 22);
+							break;
+						}
+					}
+					
+				}else if(type.equals("addI") || 
+						 type.equals("subI") || 
+						 type.equals("storeAO") ||
+						 type.equals("storeAI")){
+ 
+					
+					if(path == null){
+						if(thisIns.getOut().equals(thatIns.getIn1())){
+							DefaultWeightedEdge e = dependencies.addEdge(thisIns, thatIns);
+							if(e != null) dependencies.setEdgeWeight(e, 22);
+							break;
+						}
+					}
+					
+				}else if(type.equals("loadAO")){
+					if(thatIns.getType().equals("storeAO")){
+						if(path == null){
+							if(thatIns.getOut().equals(thisIns.getIn1()) && thatIns.getRegOffset().equals(thisIns.getRegOffset())){
+								DefaultWeightedEdge e = dependencies.addEdge(thisIns, thatIns);
+								if(e != null) dependencies.setEdgeWeight(e, 22);
+								break;
+							}
+						}
+					}else{
+						if(path == null){
+							if(thisIns.getOut().equals(thatIns.getIn1())){
+								DefaultWeightedEdge e = dependencies.addEdge(thisIns, thatIns);
+								if(e != null) dependencies.setEdgeWeight(e, 22);
+								break;
+							}else if(thisIns.getOut().equals(thatIns.getIn2())){
+								DefaultWeightedEdge e = (DefaultWeightedEdge) dependencies.addEdge(thisIns, thatIns);
+								if(e != null) dependencies.setEdgeWeight(e, 22);
+								break;
+							}
+						}
+					}
+
+				}else if(type.equals("loadAI")){
+					if(thatIns.getType().equals("storeAI")){
+						if(path == null){
+							if(thatIns.getOut().equals(thisIns.getIn1()) && thatIns.getOffset() == thisIns.getOffset()){
+								DefaultWeightedEdge e = dependencies.addEdge(thisIns, thatIns);
+								if(e != null) dependencies.setEdgeWeight(e, 22);
+								break;
+							}
+						}
+					}else{
+						if(path == null){
+							if(thisIns.getOut().equals(thatIns.getIn1())){
+								DefaultWeightedEdge e = dependencies.addEdge(thisIns, thatIns);
+								if(e != null) dependencies.setEdgeWeight(e, 22);
+								break;
+							}else if(thisIns.getOut().equals(thatIns.getIn2())){
+								DefaultWeightedEdge e = (DefaultWeightedEdge) dependencies.addEdge(thisIns, thatIns);
+								if(e != null) dependencies.setEdgeWeight(e, 22);
+								break;
+							}
+						}
+					}
+				}
 			}
 		}
 	}
@@ -488,22 +597,24 @@ public class Scheduler {
 					
 					Object[] edgeArray = successors.toArray();
 					if(edgeArray.length == 0) break; //If the array is empty, there is no nextOp
-					Object edge = edgeArray[0];
-					 
-					boolean nextOpReady = true;
-					Instruction nextOp = (Instruction)dependencies.getEdgeSource((DefaultWeightedEdge)edge);
-					
-					Set deps = dependencies.outgoingEdgesOf(nextOp);
-					for(Object depEdge : deps){
-						Instruction dependency = (Instruction)dependencies.getEdgeTarget((DefaultWeightedEdge)depEdge);
-						if(active.contains(dependency) && !removeFromActive.contains(dependency)){
-							nextOpReady = false;
-							break;
+
+					for(int i = 0; i < edgeArray.length; i++){
+						Object edge = edgeArray[i];
+						boolean nextOpReady = true;
+						Instruction nextOp = (Instruction)dependencies.getEdgeSource((DefaultWeightedEdge)edge);
+						
+						Set deps = dependencies.outgoingEdgesOf(nextOp);
+						for(Object depEdge : deps){
+							Instruction dependency = (Instruction)dependencies.getEdgeTarget((DefaultWeightedEdge)depEdge);
+							if(active.contains(dependency) && !removeFromActive.contains(dependency)){
+								nextOpReady = false;
+								break;
+							}
 						}
-					}
-					
-					if(nextOpReady){
-						ready.add(nextOp);
+						
+						if(nextOpReady){
+							ready.add(nextOp);
+						}
 					}
 				}
 			}
