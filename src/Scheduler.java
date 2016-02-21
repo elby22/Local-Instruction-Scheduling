@@ -1,6 +1,10 @@
 
 
+import java.io.BufferedReader;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -25,11 +29,10 @@ public class Scheduler {
 
 	public static void main(String[] args) throws IOException {
 		String mode = args[0];
-		String input = args[1].replaceAll(",", "");
 
 		instructions = new ArrayList<Instruction>();
 
-		parseILOC(input);
+		parseILOC();
 
 
 		dependencies = new SimpleDirectedWeightedGraph<Instruction, DefaultWeightedEdge>(DefaultWeightedEdge.class);
@@ -65,6 +68,8 @@ public class Scheduler {
 
 		if("-a".equals(mode))
 			optionA();
+		else if("-b".equals(mode))
+			optionB();
 
 		//Print Graph
 
@@ -89,9 +94,18 @@ public class Scheduler {
 		
 		Collections.sort(instructions, Instruction.ScheduleComparator);
 		
+//		for(Instruction ins : instructions){
+//			System.out.println(ins.instructionString);
+//		}
+//		
+
+		PrintWriter pw = new PrintWriter(new FileWriter("schedule.out"));
+		
 		for(Instruction ins : instructions){
-			System.out.println(ins.instructionString);
+			pw.println(ins.instructionString);
 		}
+		pw.close();
+		
 	}
 
 
@@ -239,284 +253,358 @@ public class Scheduler {
 		//output [out]
 	 */
 
-	public static void parseILOC(String input){
-		StringTokenizer tokenizer = new StringTokenizer(input);
-		int count = 1;
-		//Parse
-		while(tokenizer.hasMoreTokens()){
-			String next = tokenizer.nextToken();
-			Instruction ins = null;
+	public static void parseILOC(){
+		
+	    BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
+	    String s;
+	    try {
+			while ((s = in.readLine()) != null && s.length() != 0){
+				s = s.replaceAll(",", "");
+				StringTokenizer tokenizer = new StringTokenizer(s);
+				int count = 1;
+				//Parse
+				while(tokenizer.hasMoreTokens()){
+					String next = tokenizer.nextToken();
+					Instruction ins = null;
 
-			//loadI [constant] => [out]
-			if("loadI".equals(next)){
-				ins = new Instruction(next);
+					//loadI [constant] => [out]
+					if("loadI".equals(next)){
+						ins = new Instruction(next);
 
-				next = tokenizer.nextToken();
-				ins.setConst(Integer.parseInt(next));
+						next = tokenizer.nextToken();
+						ins.setConst(Integer.parseInt(next));
 
-				next = tokenizer.nextToken(); // =>
-				next = tokenizer.nextToken();
-				ins.setOut(next);
-				ins.latency = 1;
+						next = tokenizer.nextToken(); // =>
+						next = tokenizer.nextToken();
+						ins.setOut(next);
+						ins.latency = 1;
 
-				ins.instructionString = ins.getType() + " " + ins.getConst() + " => " + ins.getOut();
+						ins.instructionString = ins.getType() + " " + ins.getConst() + " => " + ins.getOut();
 
-				//load [in1] => [out]
-			}else if("load".equals(next)){
+						//load [in1] => [out]
+					}else if("load".equals(next)){
 
-				ins = new Instruction(next);
-				next = tokenizer.nextToken();
+						ins = new Instruction(next);
+						next = tokenizer.nextToken();
 
-				ins.setIn1(next);
+						ins.setIn1(next);
 
-				next = tokenizer.nextToken(); // =>
-				next = tokenizer.nextToken();
-				ins.setOut(next);
-				ins.latency = 5;
+						next = tokenizer.nextToken(); // =>
+						next = tokenizer.nextToken();
+						ins.setOut(next);
+						ins.latency = 5;
 
-				ins.instructionString = ins.getType() + " " + ins.getConst() + " => " + ins.getOut();
+						ins.instructionString = ins.getType() + " " + ins.getConst() + " => " + ins.getOut();
 
-				//loadAI [in1], [offset] => [out]
-			}else if("loadAI".equals(next)){
+						//loadAI [in1], [offset] => [out]
+					}else if("loadAI".equals(next)){
 
-				ins = new Instruction(next);
-				next = tokenizer.nextToken();
+						ins = new Instruction(next);
+						next = tokenizer.nextToken();
 
-				ins.setIn1(next);
-				next = tokenizer.nextToken();
+						ins.setIn1(next);
+						next = tokenizer.nextToken();
 
-				ins.setOffset(Integer.parseInt(next));
-				next = tokenizer.nextToken(); // =>
-				next = tokenizer.nextToken();
+						ins.setOffset(Integer.parseInt(next));
+						next = tokenizer.nextToken(); // =>
+						next = tokenizer.nextToken();
 
-				ins.setOut(next);
-				ins.latency = 5;
+						ins.setOut(next);
+						ins.latency = 5;
 
-				ins.instructionString = ins.getType() + " " + ins.getIn1() + ", " + ins.getOffset() + " => " + ins.getOut();
+						ins.instructionString = ins.getType() + " " + ins.getIn1() + ", " + ins.getOffset() + " => " + ins.getOut();
 
-				//loadAO [in1], [regOffset] => [out]
-			}else if("loadAO".equals(next)){
+						//loadAO [in1], [regOffset] => [out]
+					}else if("loadAO".equals(next)){
 
-				ins = new Instruction(next);
-				next = tokenizer.nextToken();
+						ins = new Instruction(next);
+						next = tokenizer.nextToken();
 
-				ins.setIn1(next);
-				next = tokenizer.nextToken();
+						ins.setIn1(next);
+						next = tokenizer.nextToken();
 
-				ins.setRegOffset(next);
-				next = tokenizer.nextToken(); // =>
-				next = tokenizer.nextToken();
+						ins.setRegOffset(next);
+						next = tokenizer.nextToken(); // =>
+						next = tokenizer.nextToken();
 
-				ins.setOut(next);
-				ins.latency = 5;
+						ins.setOut(next);
+						ins.latency = 5;
 
-				ins.instructionString = ins.getType() + " " + ins.getIn1() + ", " + ins.getRegOffset() + " => " + ins.getOut();
+						ins.instructionString = ins.getType() + " " + ins.getIn1() + ", " + ins.getRegOffset() + " => " + ins.getOut();
 
-				//store [in1] => [out]
-			}else if("store".equals(next)){
+						//store [in1] => [out]
+					}else if("store".equals(next)){
 
-				ins = new Instruction(next);
-				next = tokenizer.nextToken();
+						ins = new Instruction(next);
+						next = tokenizer.nextToken();
 
-				ins.setIn1(next);				
-				next = tokenizer.nextToken(); // =>
-				next = tokenizer.nextToken();
+						ins.setIn1(next);				
+						next = tokenizer.nextToken(); // =>
+						next = tokenizer.nextToken();
 
-				ins.setOut(next);
-				ins.latency = 5;
+						ins.setOut(next);
+						ins.latency = 5;
 
-				ins.instructionString = ins.getType() + " " + ins.getIn1() + " => " + ins.getOut();
+						ins.instructionString = ins.getType() + " " + ins.getIn1() + " => " + ins.getOut();
 
 
-				//storeAI [in1] => [out], [offset]
-			}else if("storeAI".equals(next)){
+						//storeAI [in1] => [out], [offset]
+					}else if("storeAI".equals(next)){
 
-				ins = new Instruction(next);
-				next = tokenizer.nextToken();
+						ins = new Instruction(next);
+						next = tokenizer.nextToken();
 
-				ins.setIn1(next);				
-				next = tokenizer.nextToken(); // =>
-				next = tokenizer.nextToken();
+						ins.setIn1(next);				
+						next = tokenizer.nextToken(); // =>
+						next = tokenizer.nextToken();
 
-				ins.setOut(next);
-				next = tokenizer.nextToken();
+						ins.setOut(next);
+						next = tokenizer.nextToken();
 
-				ins.setOffset(Integer.parseInt(next));
-				ins.latency = 5;
+						ins.setOffset(Integer.parseInt(next));
+						ins.latency = 5;
 
-				ins.instructionString = ins.getType() + " " + ins.getIn1() + " => " + ins.getOut() + ", " + ins.getOffset(); 
+						ins.instructionString = ins.getType() + " " + ins.getIn1() + " => " + ins.getOut() + ", " + ins.getOffset(); 
 
 
-				//storeAO [in1] => [out], [regOffset]
-			}else if("storeAO".equals(next)){
+						//storeAO [in1] => [out], [regOffset]
+					}else if("storeAO".equals(next)){
 
-				ins = new Instruction(next);
-				next = tokenizer.nextToken();
+						ins = new Instruction(next);
+						next = tokenizer.nextToken();
 
-				ins.setIn1(next);				
-				next = tokenizer.nextToken(); // =>
-				next = tokenizer.nextToken();
+						ins.setIn1(next);				
+						next = tokenizer.nextToken(); // =>
+						next = tokenizer.nextToken();
 
-				ins.setOut(next);
-				next = tokenizer.nextToken();
+						ins.setOut(next);
+						next = tokenizer.nextToken();
 
-				ins.setRegOffset(next);
-				ins.latency = 5;
+						ins.setRegOffset(next);
+						ins.latency = 5;
 
-				ins.instructionString = ins.getType() + " " + ins.getIn1() + " => " + ins.getOut() + ", " + ins.getRegOffset(); 
+						ins.instructionString = ins.getType() + " " + ins.getIn1() + " => " + ins.getOut() + ", " + ins.getRegOffset(); 
 
 
-				//addI [in1], [const] => [out]
-			}else if("addI".equals(next)){
+						//addI [in1], [const] => [out]
+					}else if("addI".equals(next)){
 
-				ins = new Instruction(next);
-				next = tokenizer.nextToken();
+						ins = new Instruction(next);
+						next = tokenizer.nextToken();
 
-				ins.setIn1(next);
-				next = tokenizer.nextToken();
+						ins.setIn1(next);
+						next = tokenizer.nextToken();
 
-				//Input doesn't matter here, no dependiences 
-				ins.setConst(Integer.parseInt(next));
-				next = tokenizer.nextToken(); // =>
-				next = tokenizer.nextToken();
+						//Input doesn't matter here, no dependiences 
+						ins.setConst(Integer.parseInt(next));
+						next = tokenizer.nextToken(); // =>
+						next = tokenizer.nextToken();
 
-				ins.setOut(next);
-				next = tokenizer.nextToken();
-				ins.latency = 1;
+						ins.setOut(next);
+						next = tokenizer.nextToken();
+						ins.latency = 1;
 
-				ins.instructionString = ins.getType() + " " + ins.getIn1() + ", " + ins.getConst() + " => " + ins.getOut();
+						ins.instructionString = ins.getType() + " " + ins.getIn1() + ", " + ins.getConst() + " => " + ins.getOut();
 
 
-				//add [in1], [in2] => [out]
-			}else if("add".equals(next)){
+						//add [in1], [in2] => [out]
+					}else if("add".equals(next)){
 
-				ins = new Instruction(next);
-				next = tokenizer.nextToken();
+						ins = new Instruction(next);
+						next = tokenizer.nextToken();
 
-				ins.setIn1(next);
-				next = tokenizer.nextToken();
+						ins.setIn1(next);
+						next = tokenizer.nextToken();
 
-				ins.setIn2(next);
-				next = tokenizer.nextToken(); // =>
-				next = tokenizer.nextToken();
+						ins.setIn2(next);
+						next = tokenizer.nextToken(); // =>
+						next = tokenizer.nextToken();
 
-				ins.setOut(next);
+						ins.setOut(next);
 
-				ins.latency = 1;
+						ins.latency = 1;
 
-				ins.instructionString = ins.getType() + " " + ins.getIn1() + ", " + ins.getIn2() + " => " + ins.getOut();
+						ins.instructionString = ins.getType() + " " + ins.getIn1() + ", " + ins.getIn2() + " => " + ins.getOut();
 
 
-				//subI [in1], [const] => [out]
-			}else if("subI".equals(next)){
+						//subI [in1], [const] => [out]
+					}else if("subI".equals(next)){
 
-				ins = new Instruction(next);
-				next = tokenizer.nextToken();
+						ins = new Instruction(next);
+						next = tokenizer.nextToken();
 
-				ins.setIn1(next);
-				next = tokenizer.nextToken();
+						ins.setIn1(next);
+						next = tokenizer.nextToken();
 
-				//Input doesn't matter here, no dependiences 
-				ins.setConst(Integer.parseInt(next));
-				next = tokenizer.nextToken(); // =>
-				next = tokenizer.nextToken();
+						//Input doesn't matter here, no dependiences 
+						ins.setConst(Integer.parseInt(next));
+						next = tokenizer.nextToken(); // =>
+						next = tokenizer.nextToken();
 
-				ins.setOut(next);
-				next = tokenizer.nextToken();
-				ins.latency = 1;
+						ins.setOut(next);
+						next = tokenizer.nextToken();
+						ins.latency = 1;
 
-				ins.instructionString = ins.getType() + " " + ins.getIn1() + ", " + ins.getConst() + " => " + ins.getOut();
+						ins.instructionString = ins.getType() + " " + ins.getIn1() + ", " + ins.getConst() + " => " + ins.getOut();
 
 
-				//sub [in1], [in2] => [out]
-			}else if("sub".equals(next)){
+						//sub [in1], [in2] => [out]
+					}else if("sub".equals(next)){
 
-				ins = new Instruction(next);
-				next = tokenizer.nextToken();
+						ins = new Instruction(next);
+						next = tokenizer.nextToken();
 
-				ins.setIn1(next);
-				next = tokenizer.nextToken();
+						ins.setIn1(next);
+						next = tokenizer.nextToken();
 
-				ins.setIn2(next);
-				next = tokenizer.nextToken(); // =>
-				next = tokenizer.nextToken();
+						ins.setIn2(next);
+						next = tokenizer.nextToken(); // =>
+						next = tokenizer.nextToken();
 
-				ins.setOut(next);
-				ins.latency = 1;
+						ins.setOut(next);
+						ins.latency = 1;
 
-				ins.instructionString = ins.getType() + " " + ins.getIn1() + ", " + ins.getIn2() + " => " + ins.getOut();
+						ins.instructionString = ins.getType() + " " + ins.getIn1() + ", " + ins.getIn2() + " => " + ins.getOut();
 
 
-				//mult [in1], [in2] => [out]
-			}else if("mult".equals(next)){
+						//mult [in1], [in2] => [out]
+					}else if("mult".equals(next)){
 
-				ins = new Instruction(next);
-				next = tokenizer.nextToken();
+						ins = new Instruction(next);
+						next = tokenizer.nextToken();
 
-				ins.setIn1(next);
-				next = tokenizer.nextToken();
+						ins.setIn1(next);
+						next = tokenizer.nextToken();
 
-				ins.setIn2(next);
-				next = tokenizer.nextToken(); // =>
-				next = tokenizer.nextToken();
+						ins.setIn2(next);
+						next = tokenizer.nextToken(); // =>
+						next = tokenizer.nextToken();
 
-				ins.setOut(next);
+						ins.setOut(next);
 
-				ins.latency = 3;
+						ins.latency = 3;
 
-				ins.instructionString = ins.getType() + " " + ins.getIn1() + ", " + ins.getIn2() + " => " + ins.getOut();
+						ins.instructionString = ins.getType() + " " + ins.getIn1() + ", " + ins.getIn2() + " => " + ins.getOut();
 
 
-				//div [in1], [in2] => [out]
-			}else if("div".equals(next)){
+						//div [in1], [in2] => [out]
+					}else if("div".equals(next)){
 
-				ins = new Instruction(next);
-				next = tokenizer.nextToken();
+						ins = new Instruction(next);
+						next = tokenizer.nextToken();
 
-				ins.setIn1(next);
-				next = tokenizer.nextToken();
+						ins.setIn1(next);
+						next = tokenizer.nextToken();
 
-				ins.setIn2(next);
-				next = tokenizer.nextToken(); // =>
-				next = tokenizer.nextToken();
+						ins.setIn2(next);
+						next = tokenizer.nextToken(); // =>
+						next = tokenizer.nextToken();
 
-				ins.setOut(next);
+						ins.setOut(next);
 
-				ins.latency = 3;
+						ins.latency = 3;
 
-				ins.instructionString = ins.getType() + " " + ins.getIn1() + ", " + ins.getIn2() + " => " + ins.getOut();
+						ins.instructionString = ins.getType() + " " + ins.getIn1() + ", " + ins.getIn2() + " => " + ins.getOut();
 
 
-				//nop
-			}else if("nop".equals(next)){ 
+						//nop
+					}else if("nop".equals(next)){ 
 
-				ins = new Instruction(next);
+						ins = new Instruction(next);
 
-				ins.latency = 1;
+						ins.latency = 1;
 
-				ins.instructionString = ins.getType();
+						ins.instructionString = ins.getType();
 
-				//output [out]
-			}else if("output".equals(next)){ 
+						//output [out]
+					}else if("output".equals(next)){ 
 
-				ins = new Instruction(next);
-				next = tokenizer.nextToken();
+						ins = new Instruction(next);
+						next = tokenizer.nextToken();
 
-				ins.setOut(next); 
-				ins.latency = 1;
+						ins.setOut(next); 
+						ins.latency = 1;
 
-				ins.instructionString = ins.getType() + " " + ins.getOut();
+						ins.instructionString = ins.getType() + " " + ins.getOut();
 
+					}
+					ins.inputIndex = count;
+					instructions.add(ins);
+					count++;
+				}
 			}
-			ins.inputIndex = count;
-			instructions.add(ins);
-			count++;
-		}
+		} catch (NumberFormatException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}	
 	}
 
 	public static void optionA(){
 		int cycle = 1;
 		PriorityQueue<Instruction> ready = new PriorityQueue<Instruction>(); 
+		ArrayList<Instruction> active = new ArrayList<Instruction>();
+
+		for(Instruction ins : instructions){
+			if(ins.isLeaf) ready.add(ins);
+		}
+
+		while(!(ready.isEmpty() && active.isEmpty())){
+			if(!ready.isEmpty()){
+				Instruction op = ready.remove();
+				op.schedule = cycle;
+				active.add(op);
+			}
+
+			cycle++;
+
+			//This arraylist prevents concurrency issues
+			ArrayList<Instruction> removeFromActive = new ArrayList<Instruction>();
+
+			for(Instruction op : active){
+				if(op.schedule + op.latency <= cycle){
+					removeFromActive.add(op);
+
+					//Tree is reversed, so the outgoing edges point to instructions that must fire before this instruction
+					//There will be one edge to the successor.
+					//The successor may have many dependencies. If they are all inactive, then add this new one to the queue.
+					//NOTE: this is a convoluted method for doing this. Reason being, I don't know the API that well and we are working through a graph backwards.
+					Set<DefaultWeightedEdge> successors = dependencies.incomingEdgesOf(op);
+
+					Object[] edgeArray = successors.toArray();
+					if(edgeArray.length == 0) break; //If the array is empty, there is no nextOp
+
+					for(int i = 0; i < edgeArray.length; i++){
+						Object edge = edgeArray[i];
+						boolean nextOpReady = true;
+						Instruction nextOp = (Instruction)dependencies.getEdgeSource((DefaultWeightedEdge)edge);
+
+						Set<DefaultWeightedEdge> deps = dependencies.outgoingEdgesOf(nextOp);
+						for(Object depEdge : deps){
+							Instruction dependency = (Instruction)dependencies.getEdgeTarget((DefaultWeightedEdge)depEdge);
+							if(active.contains(dependency) && !removeFromActive.contains(dependency)){
+								nextOpReady = false;
+								break;
+							}
+						}
+
+						if(nextOpReady){
+							ready.add(nextOp);
+						}
+					}
+				}
+			}
+
+			active.removeAll(removeFromActive);
+		}
+
+	}
+	
+	public static void optionB(){
+		int cycle = 1;
+		PriorityQueue<Instruction> ready = new PriorityQueue<Instruction>(instructions.size(), Instruction.LatencyComparator);
 		ArrayList<Instruction> active = new ArrayList<Instruction>();
 
 		for(Instruction ins : instructions){

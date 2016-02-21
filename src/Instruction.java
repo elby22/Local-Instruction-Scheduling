@@ -100,7 +100,7 @@ public class Instruction implements Comparable<Instruction>{
 	}
 
 	
-	//Compareto is used for heap, compares based on priority
+	//Default for the heap on optionA(). Uses priority.
 	@Override
 	public int compareTo(Instruction o) {
 		Instruction that = (Instruction) o;
@@ -115,6 +115,15 @@ public class Instruction implements Comparable<Instruction>{
 			return a.schedule - b.schedule;
 		}
 	};
+	
+	public static Comparator<Instruction> LatencyComparator = new Comparator<Instruction>() {
+			
+			//Sorts based on latency
+			@Override
+			public int compare(Instruction a, Instruction b) {
+				return a.latency - b.latency;
+			}
+		};
 
 
 	
