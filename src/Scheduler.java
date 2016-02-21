@@ -5,13 +5,10 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
-import java.util.AbstractMap;
-import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.PriorityQueue;
 import java.util.Set;
 import java.util.StringTokenizer;
@@ -55,7 +52,7 @@ public class Scheduler {
 
 		roots = new ArrayList<Instruction>();
 
-		//find leafs
+		//find external nodes
 		for(Instruction ins : instructions){
 			if(dependencies.outgoingEdgesOf(ins).isEmpty()){
 				ins.isLeaf = true;
@@ -65,42 +62,13 @@ public class Scheduler {
 				roots.add(ins);
 			}
 		}
-		
-//		System.out.println(roots);
-//		System.out.println(registers);
 
 		prioritize();
 
-		if("-a".equals(mode))
-			optionA();
-		else if("-b".equals(mode))
-			optionB();
+		schedule(mode.toLowerCase());
 
-		//Print Graph
-
-
-
-		Set<Instruction> verticies = dependencies.vertexSet();		
-		Set<DefaultWeightedEdge> edges = dependencies.edgeSet();		
-		for(Instruction i : verticies){		
-
-			Instruction ii = i;		
-			System.out.println(i);		
-			for(DefaultWeightedEdge e : edges){		
-
-				if(dependencies.getEdgeSource(e).equals(i)){		
-					System.out.println("	" + e + dependencies.getEdgeWeight(e));		
-				}		
-			}		
-		}
-		
 		Collections.sort(instructions, Instruction.ScheduleComparator);
 		
-		for(Instruction ins : instructions){
-			System.out.println(ins.instructionString);
-		}
-
-
 		PrintWriter pw = new PrintWriter(new FileWriter("schedule.out"));
 		
 		for(Instruction ins : instructions){
@@ -167,6 +135,14 @@ public class Scheduler {
 						type.equals("subI") || 
 						type.equals("storeAO") ||
 						type.equals("storeAI")){
+					
+					if((type.equals("storeAI") || type.equals("storeAO")) &&
+							(thatIns.type.contains("load"))){
+						if(thisIns.getOut().equals(thatIns.getOut()) && !found2){
+							dependencies.addEdge(thisIns, thatIns);
+							found2 = true;
+						}
+					}
 
 					//Only have one operand to find
 					if(thisIns.getIn1().equals(thatIns.getOut()) && !found1){
@@ -283,7 +259,6 @@ public class Scheduler {
 			while ((s = in.readLine()) != null && s.length() != 0){
 				s = s.replaceAll(",", "");
 				StringTokenizer tokenizer = new StringTokenizer(s);
-				int count = 1;
 				//Parse
 				while(tokenizer.hasMoreTokens()){
 					String next = tokenizer.nextToken();
@@ -572,11 +547,22 @@ public class Scheduler {
 		}	
 	}
 
-	public static void optionA(){
+	public static void schedule(String option){
 		int cycle = 1;
-		PriorityQueue<Instruction> ready = new PriorityQueue<Instruction>(); 
+		PriorityQueue<Instruction> ready = null;
 		ArrayList<Instruction> active = new ArrayList<Instruction>();
-
+		
+		if("-a".equals(option)){
+			//Uses default comparator
+			ready = new PriorityQueue<Instruction>(); 
+		}else if("-b".equals(option)){
+			//Uses LatencyComparator
+			ready = new PriorityQueue<Instruction>(instructions.size(), Instruction.LatencyComparator); 
+		}else if("-c".equals(option)){
+			//Uses reverse priority 
+			ready = new PriorityQueue<Instruction>(instructions.size(), Instruction.ReversePriority); 
+		}
+		
 		for(Instruction ins : instructions){
 			if(ins.isLeaf) ready.add(ins);
 		}
@@ -626,70 +612,7 @@ public class Scheduler {
 					}
 				}
 			}
-
 			active.removeAll(removeFromActive);
 		}
-
 	}
-	
-	public static void optionB(){
-		int cycle = 1;
-		PriorityQueue<Instruction> ready = new PriorityQueue<Instruction>(instructions.size(), Instruction.LatencyComparator);
-		ArrayList<Instruction> active = new ArrayList<Instruction>();
-
-		for(Instruction ins : instructions){
-			if(ins.isLeaf) ready.add(ins);
-		}
-
-		while(!(ready.isEmpty() && active.isEmpty())){
-			if(!ready.isEmpty()){
-				Instruction op = ready.remove();
-				op.schedule = cycle;
-				active.add(op);
-			}
-
-			cycle++;
-
-			//This arraylist prevents concurrency issues
-			ArrayList<Instruction> removeFromActive = new ArrayList<Instruction>();
-
-			for(Instruction op : active){
-				if(op.schedule + op.latency <= cycle){
-					removeFromActive.add(op);
-
-					//Tree is reversed, so the outgoing edges point to instructions that must fire before this instruction
-					//There will be one edge to the successor.
-					//The successor may have many dependencies. If they are all inactive, then add this new one to the queue.
-					//NOTE: this is a convoluted method for doing this. Reason being, I don't know the API that well and we are working through a graph backwards.
-					Set<DefaultWeightedEdge> successors = dependencies.incomingEdgesOf(op);
-
-					Object[] edgeArray = successors.toArray();
-					if(edgeArray.length == 0) break; //If the array is empty, there is no nextOp
-
-					for(int i = 0; i < edgeArray.length; i++){
-						Object edge = edgeArray[i];
-						boolean nextOpReady = true;
-						Instruction nextOp = (Instruction)dependencies.getEdgeSource((DefaultWeightedEdge)edge);
-
-						Set<DefaultWeightedEdge> deps = dependencies.outgoingEdgesOf(nextOp);
-						for(Object depEdge : deps){
-							Instruction dependency = (Instruction)dependencies.getEdgeTarget((DefaultWeightedEdge)depEdge);
-							if(active.contains(dependency) && !removeFromActive.contains(dependency)){
-								nextOpReady = false;
-								break;
-							}
-						}
-
-						if(nextOpReady){
-							ready.add(nextOp);
-						}
-					}
-				}
-			}
-
-			active.removeAll(removeFromActive);
-		}
-
-	}
-
 }

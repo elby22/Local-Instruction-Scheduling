@@ -96,7 +96,7 @@ public class Instruction implements Comparable<Instruction>{
 
 	@Override
 	public String toString() { 
-		return "(" + latency + ") " + instructionString;
+		return instructionString;
 	}
 
 	
@@ -118,12 +118,22 @@ public class Instruction implements Comparable<Instruction>{
 	
 	public static Comparator<Instruction> LatencyComparator = new Comparator<Instruction>() {
 			
-			//Sorts based on latency
-			@Override
-			public int compare(Instruction a, Instruction b) {
-				return a.latency - b.latency;
-			}
-		};
+		//Sorts based on latency
+		@Override
+		public int compare(Instruction a, Instruction b) {
+			return a.latency - b.latency;
+		}
+	};
+
+	public static Comparator<Instruction> ReversePriority = new Comparator<Instruction>() {
+		
+		//Sorts backwards based on priority
+		@Override
+		public int compare(Instruction a, Instruction b) {
+			return a.priority - b.priority;
+		}
+	};
+
 
 
 	
