@@ -5,9 +5,13 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
+import java.util.AbstractMap;
+import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.PriorityQueue;
 import java.util.Set;
 import java.util.StringTokenizer;
@@ -24,13 +28,15 @@ public class Scheduler {
 
 	static SimpleDirectedWeightedGraph<Instruction, DefaultWeightedEdge> dependencies;
 
-	static Instruction root;
 	static ArrayList<Instruction> roots;
+	
+	static HashMap<String, Integer> registers;
 
 	public static void main(String[] args) throws IOException {
 		String mode = args[0];
 
 		instructions = new ArrayList<Instruction>();
+		registers = new HashMap<String, Integer>();
 
 		parseILOC();
 
@@ -47,10 +53,6 @@ public class Scheduler {
 
 		addAntiDependcencies();
 
-		root = instructions.get(instructions.size() - 1);
-
-		root.priority = root.getLatency();
-
 		roots = new ArrayList<Instruction>();
 
 		//find leafs
@@ -63,6 +65,9 @@ public class Scheduler {
 				roots.add(ins);
 			}
 		}
+		
+//		System.out.println(roots);
+//		System.out.println(registers);
 
 		prioritize();
 
@@ -110,21 +115,25 @@ public class Scheduler {
 
 
 	public static void prioritize(){
-
-		BreadthFirstIterator<Instruction, DefaultWeightedEdge> bfs = new BreadthFirstIterator<Instruction, DefaultWeightedEdge>(dependencies, root);
-		bfs.next();
-		while(bfs.hasNext()){
-			Instruction ins = bfs.next();
-
-			Set<DefaultWeightedEdge> edges = dependencies.edgesOf(ins);
-			
-			//There should only be one source edge
-			for(DefaultWeightedEdge e : edges){
-				if(dependencies.getEdgeWeight(e) == 22) continue;
+		for(Instruction root : roots){
+			root.priority = root.latency;
+			BreadthFirstIterator<Instruction, DefaultWeightedEdge> bfs = new BreadthFirstIterator<Instruction, DefaultWeightedEdge>(dependencies, root);
+			bfs.next();
+			while(bfs.hasNext()){
+				Instruction ins = bfs.next();
+	
+				Set<DefaultWeightedEdge> edges = dependencies.edgesOf(ins);
 				
-				Instruction source = dependencies.getEdgeSource(e);
-				if(!source.equals(ins)){
-					ins.priority = source.priority + ins.getLatency();
+				//There should only be one source edge
+				for(DefaultWeightedEdge e : edges){
+					if(dependencies.getEdgeWeight(e) == 22) continue;
+					
+					Instruction source = dependencies.getEdgeSource(e);
+					if(!source.equals(ins)){
+						int newPriority = source.priority + ins.getLatency();
+						if(newPriority > ins.priority)
+							ins.priority = newPriority;
+					}
 				}
 			}
 		}
@@ -181,9 +190,15 @@ public class Scheduler {
 						dependencies.addEdge(thisIns, thatIns);
 						break;
 					}
+				}else if(type.equals("output") && thatIns.type.equals("storeAI")){
+					
+					int output = Integer.parseInt(thisIns.getOut());
+					int thatAddress = registers.get(thatIns.getOut()) + thatIns.getOffset();
+					if(output == thatAddress){
+						dependencies.addEdge(thisIns, thatIns);
+						break;
+					}
 				}
-
-
 			}
 		}
 	}
@@ -280,6 +295,16 @@ public class Scheduler {
 						ins.latency = 1;
 
 						ins.instructionString = ins.getType() + " " + ins.getConst() + " => " + ins.getOut();
+						
+						//This maps memory addresses to registers
+						boolean regInSet = false;
+						
+						if(registers.containsKey(ins.out)){
+							registers.remove(ins.out);
+							registers.put(ins.out, ins.constant);
+						}else{
+							registers.put(ins.out, ins.constant);
+						}
 
 						//load [in1] => [out]
 					}else if("load".equals(next)){
