@@ -99,10 +99,10 @@ public class Scheduler {
 		
 		Collections.sort(instructions, Instruction.ScheduleComparator);
 		
-//		for(Instruction ins : instructions){
-//			System.out.println(ins.instructionString);
-//		}
-//		
+		for(Instruction ins : instructions){
+			System.out.println(ins.instructionString);
+		}
+
 
 		PrintWriter pw = new PrintWriter(new FileWriter("schedule.out"));
 		
@@ -140,7 +140,6 @@ public class Scheduler {
 	}
 
 
-	//Does not account for NOP AND OUTPUT
 	public static void addTrueDependencies(){
 		for(int i = instructions.size() - 1; i >= 0; i--){			
 			Instruction thisIns = instructions.get(i);
@@ -198,6 +197,10 @@ public class Scheduler {
 						dependencies.addEdge(thisIns, thatIns);
 						break;
 					}
+				}else if(type.equals("nop")){
+					//Just make the nop dependant on the previous instruction
+					dependencies.addEdge(thisIns, thatIns);
+					break;
 				}
 			}
 		}
@@ -232,6 +235,9 @@ public class Scheduler {
 						if(e != null) dependencies.setEdgeWeight(e, 22);
 						break;
 					}
+					
+				}else if(type.equals("output") || type.equals("nop")){
+					break;
 				}else{
 					if(thisIns.getOut().equals(thatIns.getIn1())){
 						DefaultWeightedEdge e = dependencies.addEdge(thisIns, thatIns);
