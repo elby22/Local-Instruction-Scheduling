@@ -96,7 +96,7 @@ public class Instruction implements Comparable<Instruction>{
 
 	@Override
 	public String toString() { 
-		return "[" + inputIndex + "] (" + latency + ") " + instructionString;
+		return "(" + latency + ") " + instructionString;
 	}
 
 	

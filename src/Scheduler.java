@@ -79,23 +79,20 @@ public class Scheduler {
 		//Print Graph
 
 
-//		for(Instruction ins : instructions){
-//			System.out.println(ins.schedule +" =S= " + ins.toString() + " =P= " + ins.priority);
-//		}
-//
-//		Set<Instruction> verticies = dependencies.vertexSet();		
-//		Set<DefaultWeightedEdge> edges = dependencies.edgeSet();		
-//		for(Instruction i : verticies){		
-//
-//			Instruction ii = i;		
-//			System.out.println("Priority: " + ii.priority + " - " + i);		
-//			for(DefaultWeightedEdge e : edges){		
-//
-//				if(dependencies.getEdgeSource(e).equals(i)){		
-//					System.out.println("	" + e + dependencies.getEdgeWeight(e));		
-//				}		
-//			}		
-//		}
+
+		Set<Instruction> verticies = dependencies.vertexSet();		
+		Set<DefaultWeightedEdge> edges = dependencies.edgeSet();		
+		for(Instruction i : verticies){		
+
+			Instruction ii = i;		
+			System.out.println(i);		
+			for(DefaultWeightedEdge e : edges){		
+
+				if(dependencies.getEdgeSource(e).equals(i)){		
+					System.out.println("	" + e + dependencies.getEdgeWeight(e));		
+				}		
+			}		
+		}
 		
 		Collections.sort(instructions, Instruction.ScheduleComparator);
 		
@@ -189,13 +186,17 @@ public class Scheduler {
 						dependencies.addEdge(thisIns, thatIns);
 						break;
 					}
-				}else if(type.equals("output") && thatIns.type.equals("storeAI")){
-					
-					int output = Integer.parseInt(thisIns.getOut());
-					int thatAddress = registers.get(thatIns.getOut()) + thatIns.getOffset();
-					if(output == thatAddress){
+				}else if(type.equals("output")){
+					boolean found = false;
+					if(thatIns.type.equals("storeAI") && !found){
+						int output = Integer.parseInt(thisIns.getOut());
+						int thatAddress = registers.get(thatIns.getOut()) + thatIns.getOffset();
+						if(output == thatAddress){
+							dependencies.addEdge(thisIns, thatIns);
+							found = true;
+						}
+					}else if(thatIns.type.equals("output")){
 						dependencies.addEdge(thisIns, thatIns);
-						break;
 					}
 				}else if(type.equals("nop")){
 					//Just make the nop dependant on the previous instruction
@@ -559,9 +560,7 @@ public class Scheduler {
 						ins.instructionString = ins.getType() + " " + ins.getOut();
 
 					}
-					ins.inputIndex = count;
 					instructions.add(ins);
-					count++;
 				}
 			}
 		} catch (NumberFormatException e) {
