@@ -1,0 +1,10 @@
+#!/bin/bash
+
+for file in test/*.iloc
+do	
+	echo "$file"
+	./../ILOC_sim/src/sim < "$file"
+	echo "schedule.out"	
+	java -classpath "jgrapht-core-0.9.1.jar:." Scheduler -a < "$file"
+	./../ILOC_sim/src/sim < schedule.out
+done
